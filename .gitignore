@@ -1,0 +1,11 @@
+.DS_Store
+.DS_Store?
+*.pyc
+*.mp4
+*.dSYM/
+./mpfmdata/
+.RData
+.RDataTmp
+.RHistory
+./bin/mpfm.dSYM/
+./bin/mpfm
