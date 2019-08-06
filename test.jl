@@ -89,7 +89,7 @@ function run_batch_ibm()
         end
     end
     CSV.write("ibm_metadata.csv", ibm_metadata)
-    CSV.write("ibm_metadata.csv", fits_metadata)
+    CSV.write("fits_metadata.csv", fits_metadata)
 end
 
 function set_mp_total_k(mp::metapop, k::Int64)
