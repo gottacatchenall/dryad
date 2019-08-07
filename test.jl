@@ -33,7 +33,7 @@ function run_batch_ibm()
     n_ef_vals::Array{Int64} = [1]
     n_chromo_vals::Array{Int64} = [5]
     genome_length_vals::Array{Float64} = [100.0]
-    n_rep = 1
+    n_rep = 50
     n_gen = 500
 
     id_ct::Int64 = 1
@@ -42,7 +42,7 @@ function run_batch_ibm()
     ibm_genome_file::String = "ibm_genomes.csv"
     fits_file::String = "fits.csv"
 
-    df = DataFrame(id=[],gen=[],gst=[],jostd=[])
+    df = DataFrame(id=[],gen=[],gst=[],jostd=[],mean_poly_ct=[])
     CSV.write(fits_file, df)
 
 

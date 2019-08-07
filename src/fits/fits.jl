@@ -26,7 +26,7 @@ end
 
 
 function run_fits(instance::fits, log_freq::Int64, n_gen::Int64, id::Int64)
-    df = DataFrame(id=[],gen=[],gst=[],jostd=[])
+    df = DataFrame(id=[],gen=[],gst=[],jostd=[], mean_poly_ct=[])
     n_pops::Int64 = length(instance.mp.populations)
 
     for g = 0:n_gen
@@ -34,10 +34,12 @@ function run_fits(instance::fits, log_freq::Int64, n_gen::Int64, id::Int64)
             state::Array{Float64} = instance.ct_map
             jostd::Float64 = calc_jost_d(state)
             gst::Float64 = calc_gst(state)
+            mean_poly::Float64 = calc_mean_poly_ct(state)
             push!(df.jostd, jostd)
             push!(df.gen, g)
             push!(df.gst, gst)
             push!(df.id, id)
+            push!(df.mean_poly_ct, mean_poly)
         end
         run_gen(instance)
     end

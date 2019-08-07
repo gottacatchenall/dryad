@@ -19,17 +19,22 @@ function log_pop_data(instance::ibm, allele_freq_map::Array{Array{Float64,2}}, p
         prop_k::Float64 = pop_cts[p] / instance.mp.populations[p].k
         push!(popDF.prop_of_k, prop_k)
 
-        mean_poly::Float64 = get_mean_poly_ct(p, allele_freq_map)
+        mean_poly::Float64 = get_mean_poly_ct_in_pop(p, allele_freq_map)
         push!(popDF.mean_poly_ct, mean_poly)
     end
 end
 
-function get_mean_poly_ct(p::Int64, allele_freq_map::Array{Array{Float64,2}})
+function get_mean_poly_ct_in_pop(p::Int64, allele_freq_map::Array{Array{Float64,2}})
     n_loci::Int64 = length(allele_freq_map)
 
-    sum::Int64 = 0
+    sum::Float64 = 0
     for l = 1:n_loci
-        sum += length(allele_freq_map[l][p,:][allele_freq_map[l][p,:] .> 0])
+        n_alleles::Int64 = size(allele_freq_map[l])[2]
+        for i = 1:n_alleles
+            if (allele_freq_map[l][p,i] > 0)
+                sum += 1.0
+            end
+        end
     end
     mean_poly::Float64 = sum / n_loci
     return mean_poly
@@ -41,7 +46,9 @@ function log_genome_data(allele_freq_map::Array{Array{Float64,2}}, genomeDF::Dat
     for l = 1:n_loci
         gst::Float64 = calc_gst(allele_freq_map[l])
         jostd::Float64 = calc_jost_d(allele_freq_map[l])
-
+        mean_poly_ct::Float64 = calc_mean_poly_ct(allele_freq_map[l])
+        # log poly ct
+        push!(genomeDF.mean_poly_ct_per_pop, mean_poly_ct)
         push!(genomeDF.gen, gen)
         push!(genomeDF.gst, gst)
         push!(genomeDF.jostd, jostd)

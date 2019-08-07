@@ -32,7 +32,7 @@ function run_n_generations(instance::ibm, n_gen::Int64; migration_rate::Float64=
     #n_log_pops::Int64 = n_log*n_pops
     #n_log_global::Int64 =
 
-    genomeDF = DataFrame(gen=[], gst=[], jostd=[], locus=[])
+    genomeDF = DataFrame(gen=[], gst=[], jostd=[], locus=[], mean_poly_ct_per_pop=[])
     popDF = DataFrame(gen=[], pop=[], w_mean=[], prop_of_k=[], mean_poly_ct=[])
 
     for g = 0:n_gen
