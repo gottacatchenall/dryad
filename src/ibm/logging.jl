@@ -40,13 +40,13 @@ function get_mean_poly_ct_in_pop(p::Int64, allele_freq_map::Array{Array{Float64,
     return mean_poly
 end
 
-
 function log_genome_data(allele_freq_map::Array{Array{Float64,2}}, genomeDF::DataFrame, gen::Int64)
     n_loci::Int64 = length(allele_freq_map)
     for l = 1:n_loci
-        gst::Float64 = calc_gst(allele_freq_map[l])
-        jostd::Float64 = calc_jost_d(allele_freq_map[l])
-        mean_poly_ct::Float64 = calc_mean_poly_ct(allele_freq_map[l])
+        state::Array{Float64,2} = (allele_freq_map[l])
+        gst::Float64 = calc_gst(state)
+        jostd::Float64 = calc_jost_d(state)
+        mean_poly_ct::Float64 = calc_mean_poly_ct(state)
         # log poly ct
         push!(genomeDF.mean_poly_ct_per_pop, mean_poly_ct)
         push!(genomeDF.gen, gen)
@@ -102,4 +102,23 @@ end
 function get_allele_index(allele_list::Array{Float64, 1}, allele::Float64)
     index::Array{Int64} = findall(x -> x == allele, allele_list)
     return index[1]
+end
+
+
+
+function update_ibm_metadata(metadata::DataFrame,id_ct::Int64, m::Float64, s::Float64, k::Int64, n_ef::Int64, n_chromo::Int64, genome_length::Float64)
+    push!(metadata.id, id_ct)
+    push!(metadata.m, m)
+    push!(metadata.s, s)
+    push!(metadata.k, k)
+    push!(metadata.n_ef, n_ef)
+    push!(metadata.n_chromo, n_chromo)
+    push!(metadata.genome_length, genome_length)
+end
+
+function update_fits_metadata(metadata::DataFrame, id_ct::Int64, m::Float64, k::Int64, init_poly_ct::Float64)
+    push!(metadata.id, id_ct)
+    push!(metadata.m, m)
+    push!(metadata.k, k)
+    push!(metadata.init_poly_ct, init_poly_ct)
 end
