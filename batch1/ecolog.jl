@@ -1,4 +1,4 @@
-include("./src/include.jl")
+include("../src/include.jl")
 
 function run_ecological_selection()
     m_vals::Array{Float64} = [0.001, 0.005, 0.01]
