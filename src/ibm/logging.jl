@@ -42,18 +42,34 @@ end
 
 function log_genome_data(allele_freq_map::Array{Array{Float64,2}}, genomeDF::DataFrame, gen::Int64)
     n_loci::Int64 = length(allele_freq_map)
+
+    # change this such that it only logs average across all loci
+
+    avg_gst::Float64 = 0.0
+    avg_jostd::Float64 = 0.0
+    avg_poly_ct::Float64 = 0.0
+
     for l = 1:n_loci
         state::Array{Float64,2} = (allele_freq_map[l])
         gst::Float64 = calc_gst(state)
         jostd::Float64 = calc_jost_d(state)
         mean_poly_ct::Float64 = calc_mean_poly_ct(state)
-        # log poly ct
-        push!(genomeDF.mean_poly_ct_per_pop, mean_poly_ct)
-        push!(genomeDF.gen, gen)
-        push!(genomeDF.gst, gst)
-        push!(genomeDF.jostd, jostd)
-        push!(genomeDF.locus, l)
+
+        avg_gst += gst
+        avg_jostd += jostd
+        avg_poly_ct += mean_poly_ct
+
+
     end
+
+    avg_gst = avg_gst/n_loci
+    avg_jostd = avg_jostd/n_loci
+    avg_poly_ct = avg_poly_ct/n_loci
+
+    push!(genomeDF.mean_poly_ct_per_pop, avg_poly_ct)
+    push!(genomeDF.gen, gen)
+    push!(genomeDF.gst, avg_gst)
+    push!(genomeDF.jostd, avg_jostd)
 
 end
 

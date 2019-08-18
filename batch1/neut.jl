@@ -2,7 +2,7 @@ include("../src/include.jl")
 
 function run_neutral_selection()
     m_vals::Array{Float64} = [0.001, 0.005, 0.01]
-    s_vals::Array{Float64} = [1.0, 0.5, 0.1]
+    s_vals::Array{Float64} = [1.0]
     k_vals::Array{Int64} = [500,2000,4000]
     init_poly_ct::Array{Float64} = [3.0, 8.0, 15.0]
     n_ef_vals::Array{Int64} = [1]
