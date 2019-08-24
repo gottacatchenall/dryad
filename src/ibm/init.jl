@@ -95,7 +95,7 @@ function get_max_indivs_per_pop(mp::metapop)
 end
 
 
-function init_ibm(mp::metapop, g::genome; init_condition=false)::ibm
+function init_ibm(mp::metapop, g::genome; init_condition=false, rs=1)::ibm
     max_n_indivs::Int64 = 2*mp.n_indivs
     n_loci::Int64 =  g.n_loci
     n_haplo::Int64 = g.n_haplo
@@ -124,11 +124,11 @@ function init_ibm(mp::metapop, g::genome; init_condition=false)::ibm
 
     if (!init_condition)
         init_uniform_genotypes(g, genotypes, ind_ct)
-        return(ibm(mp,g,dk,genotypes, pop_map, fitness_map))
+        return(ibm(mp,g,dk,genotypes, pop_map, fitness_map, MersenneTwister(rs)))
 
     else
         init_uniform_genotypes(g, genotypes, ind_ct)
-        return(ibm(mp,g,dk,genotypes, pop_map, fitness_map))
+        return(ibm(mp,g,dk,genotypes, pop_map, fitness_map,MersenneTwister(rs)))
     end
 end
 

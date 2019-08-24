@@ -66,15 +66,17 @@ function calc_fitness(i::Int64, efs::Array{Float64}, instance::ibm, s::Float64):
             l += 1
         end
     end
-
     return w
 end
 
 function calc_fitness_component(x_i::Float64, ef_val::Float64, s::Float64)
-    diff::Float64 = abs(x_i - ef_val)
-    gauss::Float64 = exp((-1*((diff*s)^2)))
-    sel_str::Float64 = 0.004
-    return (1.0 - (sel_str*gauss))
+    diff_sq::Float64 = (abs(x_i - ef_val))^2
+
+    s_inv::Float64 = 1.0 / (2*(s^2))
+
+    gauss::Float64 = exp((-1*(diff_sq*s_inv)))
+    sel_str::Float64 = 1.0
+    return ((sel_str*gauss))
 end
 
 function get_cts(instance::ibm)::Array{Float64,1}

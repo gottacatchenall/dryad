@@ -30,8 +30,37 @@ mutable struct fits
 end
 
 
+mutable struct chromosome
+    n_loci::Int64
+    length::Float64
+    selection_str::Array{Float64}
+    ef_map::Array{Int64}
+    poly_ct::Array{Int64}
+end
+
+mutable struct genome
+    n_loci::Int64
+    n_haplo::Int64
+    mutation_rate::Float64
+    allele_dict::Array{Array{Float64,1},1}
+    chromosomes::Array{chromosome}
+end
+
+mutable struct ibm
+    mp::metapop
+    g::genome
+    dk::dispersal_kernel
+    genotypes::Array{Float64, 3}
+    population_map::Array{Int64, 1}
+    fitness_map::Array{Float64,1}
+    rng::MersenneTwister
+end
+
 macro ecological_selection() return :(1) end
 
 macro background_selection() return :(2) end
 
 macro neutral_selection() return :(3) end
+
+macro extant() return :(1) end
+macro extinct() return :(0) end

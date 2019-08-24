@@ -28,13 +28,20 @@ function reproduction(instance::ibm)
         end
     end
 
+    if (i_ct == 1)
+        return @extinct
+    end
+
+
+    # zero out the rest of stuff
     max_n_indivs::Int64 = length(instance.population_map)
     n_loci::Int64 = instance.g.n_loci
     for i = i_ct:max_n_indivs
         #instance.genotypes[i_ct,:,:] = zeros(n_loci, 2)
         instance.population_map[i_ct] = 0
     end
-    # zero out the rest of stuff
+
+    return @extant
 
 end
 

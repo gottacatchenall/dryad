@@ -122,7 +122,7 @@ end
 
 
 
-function update_ibm_metadata(metadata::DataFrame,id_ct::Int64, m::Float64, s::Float64, k::Int64, n_ef::Int64, n_chromo::Int64, genome_length::Float64)
+function update_ibm_metadata(metadata::DataFrame,id_ct::Int64, m::Float64, s::Float64, k::Int64, n_ef::Int64, n_chromo::Int64, genome_length::Float64, ipc)
     push!(metadata.id, id_ct)
     push!(metadata.m, m)
     push!(metadata.s, s)
@@ -130,11 +130,6 @@ function update_ibm_metadata(metadata::DataFrame,id_ct::Int64, m::Float64, s::Fl
     push!(metadata.n_ef, n_ef)
     push!(metadata.n_chromo, n_chromo)
     push!(metadata.genome_length, genome_length)
-end
+    push!(metadata.init_poly_ct, ipc)
 
-function update_fits_metadata(metadata::DataFrame, id_ct::Int64, m::Float64, k::Int64, init_poly_ct::Float64)
-    push!(metadata.id, id_ct)
-    push!(metadata.m, m)
-    push!(metadata.k, k)
-    push!(metadata.init_poly_ct, init_poly_ct)
 end

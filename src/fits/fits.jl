@@ -1,11 +1,20 @@
 include("../types.jl")
 
-function run_fits(instance::fits, idct::Int64)
-    mp = instance.mp
+#=                 fits_instance::fits = fits(mp, n_alleles=convert(Int64,ipc), migration_rate=m, log_freq=lf, n_gen=n_gen)
+                init_fits_uniform_ic(fits_instance)
+                update_fits_metadata(fits_metadata, id_ct, m, k, ipc)
+                df = run_fits(fits_instance, id_ct)
+                CSV.write(fits_file, df, append=true) =#
+
+function run_fits(mp::metapop, metadata; n_gen::Int64=1000, ipc::Int64=5, migration_rate::Float64=0.01, log_freq::Int64=20, id::Int64=1, rseed::Int64=1, k::Int64=1000, fits_file::String="fits.csv")
+
+    # fits(mp::metapop; n_alleles::Int64=5, migration_rate::Float64=0.01, n_gen=300, log_freq=20, rseed=1) = new(mp, length(mp.populations), n_alleles, n_gen, log_freq, migration_rate, zeros(Float64, length(mp.populations), n_alleles), MersenneTwister(rseed))
+
+    fits_instance::fits = fits(mp, migration_rate=migration_rate, n_alleles=ipc, log_freq=log_freq, n_gen=n_gen, rseed=rseed)
+    update_fits_metadata(metadata, id, migration_rate, k, ipc)
+
     n_pops = length(mp.populations)
-    n_gen = instance.n_gen
-    log_freq = instance.log_freq
-    n_alleles = instance.n_alleles
+
     df = DataFrame()
     df.id = []
     df.gen = []
@@ -15,15 +24,15 @@ function run_fits(instance::fits, idct::Int64)
     all_pops = collect(1:n_pops)
     for g = 0:n_gen
         if g % log_freq == 0
-            state::Array{Float64} = instance.ct_map
+            state::Array{Float64} = fits_instance.ct_map
             jostd::Float64 = calc_jost_d(state)
             gst::Float64 = calc_gst(state)
-            update_df(df,idct, g,jostd,gst)
+            update_df(df,id,g,jostd,gst)
         end
-        run_gen(instance)
+        run_gen(fits_instance)
     end
 
-    return df
+    CSV.write(fits_file, df, append=true)
 end
 
 function init_fits_uniform_ic(instance::fits)
@@ -42,9 +51,12 @@ end
 
 
 function get_new_pj(x_j::Array{Float64}, n_al::Int64, eff_pop_size::Int64)
-    normalize!(x_j, 1)
-    xj_new = rand(Multinomial(eff_pop_size, x_j))
-    return(xj_new)
+    if (sum(x_j) > 0 && sum(x_j) != NaN)
+        normalize!(x_j, 1)
+        xj_new = rand(Multinomial(eff_pop_size, x_j))
+        return(xj_new)
+    end
+    return(fill(0, length(x_j)))
 end
 
 function draw_from_diskern_row_old(diskernel_row::Array{Float64})
@@ -142,6 +154,13 @@ function run_gen(instance::fits)
 
         migration(p, post_drift[p,:], n_indivs_leaving, instance)
     end
+end
+
+function update_fits_metadata(metadata::DataFrame, id_ct::Int64, m::Float64, k::Int64, init_poly_ct::Int64)
+    push!(metadata.id, id_ct)
+    push!(metadata.m, m)
+    push!(metadata.k, k)
+    push!(metadata.init_poly_ct, init_poly_ct)
 end
 
 function update_df(df::DataFrame, idct::Int64, gen::Int64, jost_d::Float64, gst::Float64)

@@ -22,10 +22,14 @@ function run_neutral_selection()
 
 
     # need to track metadata
-    ibm_metadata::DataFrame = DataFrame(id=[], m=[], s=[], k=[], n_ef=[], n_chromo=[], genome_length=[])
+    ibm_metadata::DataFrame = DataFrame(id=[], m=[], s=[], k=[], n_ef=[], n_chromo=[], genome_length=[],init_poly_ct=[])
     fits_metadata::DataFrame = DataFrame(id=[], m=[], k=[],init_poly_ct=[])
 
     lf::Int64 = 20
+
+    base_random_seed = 5
+    rseedgenerator = MersenneTwister(base_random_seed)
+
 
     # init with appropriate ef values?
 
@@ -39,22 +43,24 @@ function run_neutral_selection()
                             for genome_length in genome_length_vals
                                 for r = 1:n_rep
                                     set_mp_total_k(mp, k)
-                                    g::genome = init_random_genome(n_ef=0, n_chromo=n_chromo, genome_length=genome_length, init_poly_ct=ipc)
+
+                                    rs = rand(rseedgenerator, DiscreteUniform(1, 10^10))
+
+                                    ## ================================
+                                    ## Run IBM
+                                    ## ================================
+                                    println("ID: ", id_ct, "\t\t\t m=",m," k=",k, " s=", s, " ipc=", ipc, " rs=", rs)
+                                    print("\tIBM:  ", )
+                                    @time run_ibm(mp, ibm_metadata, n_ef=0, n_gen=n_gen, migration_rate=m, selection_strength = s, log_freq=lf, genome_file=ibm_genome_file, pop_file=ibm_pop_file, id=id_ct, init_poly_ct=ipc, k=k, rseed=rs)
 
 
-                                    # Run IBM
-                                    ibm_instance::ibm = init_ibm(mp, g)
-                                    update_ibm_metadata(ibm_metadata, id_ct, m, s, k, n_ef, n_chromo, genome_length)
-                                    run_n_generations(ibm_instance, n_gen, migration_rate=m, s=s, genome_file=ibm_genome_file, pop_file=ibm_pop_file, id=id_ct, log_freq=lf)
+                                    ## ================================
+                                    ## Run FITS
+                                    ## ================================
+                                    print("\tFITS:  ")
+                                    # function run_fits(mp::metapop; n_gen::Int64=1000, ipc::Int64=5, migration_rate::Float64=0.01, log_freq::Int64=20)
+                                    @time run_fits(mp, fits_metadata, n_gen=n_gen, ipc=convert(Int64,ipc), migration_rate=m, log_freq=lf, rseed=rs, id=id_ct, k=k, fits_file=fits_file)
 
-                                    # Run FITS
-                                    n_al::Int64 = convert(Int64, ipc)
-                                    fits_instance::fits = fits(mp, n_alleles=convert(Int64,ipc), migration_rate=m, log_freq=lf, n_gen=n_gen)
-                                    init_fits_uniform_ic(fits_instance)
-
-                                    update_fits_metadata(fits_metadata, id_ct, m, k, ipc)
-                                    df = run_fits(fits_instance, id_ct)
-                                    CSV.write(fits_file, df, append=true)
 
                                     id_ct += 1
                                 end
