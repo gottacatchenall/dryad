@@ -11,6 +11,8 @@ function run_fits(mp::metapop, metadata; n_gen::Int64=1000, ipc::Int64=5, migrat
     # fits(mp::metapop; n_alleles::Int64=5, migration_rate::Float64=0.01, n_gen=300, log_freq=20, rseed=1) = new(mp, length(mp.populations), n_alleles, n_gen, log_freq, migration_rate, zeros(Float64, length(mp.populations), n_alleles), MersenneTwister(rseed))
 
     fits_instance::fits = fits(mp, migration_rate=migration_rate, n_alleles=ipc, log_freq=log_freq, n_gen=n_gen, rseed=rseed)
+    init_fits_uniform_ic(fits_instance)
+
     update_fits_metadata(metadata, id, migration_rate, k, ipc)
 
     n_pops = length(mp.populations)

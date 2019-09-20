@@ -83,44 +83,44 @@ function run_batch_ibm()
     CSV.write("fits_metadata.csv", fits_metadata)
 end
 
-function fitstest()
-    n_als = (3, 8, 15)
+function fits()
+    n_als = (5)
     n_pops = (20)
-    m = (0.001,0.005, 0.01)
-    eff_pop_size_list = (200, 800, 2000)
-    ng = 20000
-    n_rep = 30
+    mig_rates = collect(0.01:0.02:0.5)
+    k_vals = (200, 800, 2000)
+    n_gen = 20000
+    n_rep = 10
 
     fits_metadata::DataFrame = DataFrame(id=[], m=[], k=[],init_poly_ct=[])
 
+    fits_file::String = "fits.csv"
+    df = DataFrame(id=[],gen=[],jostd=[],gst=[])
+    CSV.write(fits_file, df)
 
-    df = DataFrame()
-    df.id = []
-    df.gen = []
-    df.jostd = []
-    df.gst = []
-    CSV.write("output.csv", df)
+
+    base_random_seed = 5
+    rseedgenerator = MersenneTwister(base_random_seed)
+
 
     lf = 1000
     idct::Int64 = 0
     mp::metapop = init_random_metapop()
-    for base_mig in m
-        for n_al in n_als
+    for m in mig_rates
+        for ipc in n_als
             for n_pop in n_pops
-                for eff_pop in eff_pop_size_list
-                    set_mp_total_k(mp, eff_pop)
+                for k in k_vals
+                    set_mp_total_k(mp, k)
                     for rep = 1:n_rep
+                        println("ID: ", idct, "\t m=",m," k=",k, " ipc=", ipc)
+                        rs = rand(rseedgenerator, DiscreteUniform(1, 10^10))
 
-                        fits_instance::fits = fits(mp, migration_rate=base_mig, log_freq=lf, n_gen=ng, n_alleles=n_al)
-                        init_fits_uniform_ic(fits_instance)
-                        #df = run_dke(n_gen, n_pop, n_al, base_mig, eff_pop, 10)
-                        df = run_fits(fits_instance, idct)
-
-                        update_fits_metadata(fits_metadata, idct, base_mig, eff_pop, convert(Float64,n_al))
-
-
-                        idct += 1
-                        CSV.write("output.csv", df, append=true)
+                        ## ================================
+                        ## Run FITS
+                        ## ================================
+                                print("\tFITS:  ")
+                                @time run_fits(mp, fits_metadata, n_gen=n_gen, ipc=convert(Int64,ipc), migration_rate=m, log_freq=lf, rseed=rs, id=idct, k=k, fits_file=fits_file)
+                                CSV.write("fits.csv", df, append=true)
+                                idct = idct + 1
                     end
                 end
             end
@@ -129,8 +129,8 @@ function fitstest()
     CSV.write("metadata.csv", fits_metadata)
 end
 
-#@time fitstest()
-@time run_batch_ibm()
+@time fits()
+#@time run_batch_ibm()
 #run_test()
 
 #run_fits_test()
