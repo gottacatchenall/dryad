@@ -102,7 +102,7 @@ function fits()
     rseedgenerator = MersenneTwister(base_random_seed)
 
 
-    lf = 1000
+    lf = 100
     idct::Int64 = 0
     mp::metapop = init_random_metapop()
     for m in mig_rates
