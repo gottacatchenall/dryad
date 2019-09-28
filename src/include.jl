@@ -18,6 +18,7 @@ include("./fits/fits.jl")
 
 
 include("./shared/summary_stats.jl")
+include("./shared/create_treatments.jl")
 
 #include("../ibm/*")
 #include("../cte/*")

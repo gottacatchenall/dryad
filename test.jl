@@ -85,9 +85,9 @@ end
 
 function fits()
     n_als = (5)
-    n_pops = (20)
-    mig_rates = collect(0.01:0.02:0.5)
-    k_vals = (200, 800, 2000)
+    n_pops = (10, 25, 50, 100)
+    mig_rates = collect(0.001:0.0001:0.01)
+    k_vals = (500, 1000, 2000)
     n_gen = 20000
     n_rep = 10
 
@@ -113,7 +113,6 @@ function fits()
                     for rep = 1:n_rep
                         println("ID: ", idct, "\t m=",m," k=",k, " ipc=", ipc)
                         rs = rand(rseedgenerator, DiscreteUniform(1, 10^10))
-
                         ## ================================
                         ## Run FITS
                         ## ================================
@@ -129,8 +128,14 @@ function fits()
     CSV.write("metadata.csv", fits_metadata)
 end
 
+
+#param_dict = Dict("m" => [0.01, 0.1], "ipc" => [3, 8, 15], "k" => [2000, 4000, 6000])
+#create_treatments(param_dict)
 @time fits()
 #@time run_batch_ibm()
 #run_test()
-
 #run_fits_test()
+
+
+
+
