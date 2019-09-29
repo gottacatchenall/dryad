@@ -84,14 +84,14 @@ function run_batch_ibm()
 end
 
 function fits()
-    n_als = (5)
+    n_als = (5, 10, 20)
     n_pops = (10, 25, 50, 100)
     mig_rates = collect(0.001:0.0001:0.01)
-    k_vals = (500, 1000, 2000)
+    k_vals = (500, 2000, 4000)
     n_gen = 20000
     n_rep = 10
 
-    fits_metadata::DataFrame = DataFrame(id=[], m=[], k=[],init_poly_ct=[])
+    fits_metadata::DataFrame = DataFrame(id=[], m=[], k=[],init_poly_ct=[],n_pops=[])
 
     fits_file::String = "fits.csv"
     df = DataFrame(id=[],gen=[],jostd=[],gst=[])
@@ -135,7 +135,3 @@ end
 #@time run_batch_ibm()
 #run_test()
 #run_fits_test()
-
-
-
-

@@ -13,9 +13,10 @@ function run_fits(mp::metapop, metadata; n_gen::Int64=1000, ipc::Int64=5, migrat
     fits_instance::fits = fits(mp, migration_rate=migration_rate, n_alleles=ipc, log_freq=log_freq, n_gen=n_gen, rseed=rseed)
     init_fits_uniform_ic(fits_instance)
 
-    update_fits_metadata(metadata, id, migration_rate, k, ipc)
-
     n_pops = length(mp.populations)
+
+    update_fits_metadata(metadata, id, migration_rate, k, ipc, n_pops)
+
 
     df = DataFrame()
     df.id = []
@@ -158,11 +159,12 @@ function run_gen(instance::fits)
     end
 end
 
-function update_fits_metadata(metadata::DataFrame, id_ct::Int64, m::Float64, k::Int64, init_poly_ct::Int64)
+function update_fits_metadata(metadata::DataFrame, id_ct::Int64, m::Float64, k::Int64, init_poly_ct::Int64, n_pops::Int64)
     push!(metadata.id, id_ct)
     push!(metadata.m, m)
     push!(metadata.k, k)
     push!(metadata.init_poly_ct, init_poly_ct)
+    push!(metadata.n_pops, n_pops)
 end
 
 function update_df(df::DataFrame, idct::Int64, gen::Int64, jost_d::Float64, gst::Float64)
