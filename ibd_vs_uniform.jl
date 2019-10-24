@@ -8,6 +8,7 @@ function fits()
     n_gen = 20000
     n_rep = 50
     lf = 500
+    ibd_strs = (0.5, 1.5, 3.0)
 
     base_random_seed = 5
     rseedgenerator = MersenneTwister(base_random_seed)
@@ -26,18 +27,20 @@ function fits()
     df = DataFrame(id=[],gen=[],jostd=[],gst=[])
     CSV.write(fits_file, df)
     idct::Int64 = 0
-    for k in k_vals
-        for m in mig_rates
-            for ipc in n_als
-                for n_pop in n_pops
-                    mp::metapop = init_random_metapop(num_populations=n_pop, diskern_type=@ibd_diskern)
-                    set_mp_total_k(mp, k)
-                    for rep = 1:n_rep
-                        println("FITS \t\tID: ", idct, "\t m=",m," k=",k, " ipc=", ipc)
-                        print("\t\t")
-                        rs = rand(rseedgenerator, DiscreteUniform(1, 10^10))
-                        @time run_fits(mp, fits_metadata, n_gen=n_gen, ipc=convert(Int64,ipc), migration_rate=m, log_freq=lf, rseed=rs, id=idct, k=k, fits_file=fits_file)
-                        idct = idct + 1
+    for ibd_str in ibd_strs
+        for k in k_vals
+            for m in mig_rates
+                for ipc in n_als
+                    for n_pop in n_pops
+                        mp::metapop = init_random_metapop(num_populations=n_pop, diskern_type=@ibd_diskern, ibd_decay=ibd_str)
+                        set_mp_total_k(mp, k)
+                        for rep = 1:n_rep
+                            println("FITS \t\tID: ", idct, "\t m=",m," k=",k, " ipc=", ipc)
+                            print("\t\t")
+                            rs = rand(rseedgenerator, DiscreteUniform(1, 10^10))
+                            @time run_fits(mp, fits_metadata, n_gen=n_gen, ipc=convert(Int64,ipc), migration_rate=m, log_freq=lf, rseed=rs, id=idct, k=k, fits_file=fits_file)
+                            idct = idct + 1
+                        end
                     end
                 end
             end

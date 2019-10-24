@@ -1,9 +1,9 @@
 include("../types.jl")
 
-function init_random_metapop(;num_indivs::Int64=1000, num_populations::Int64=20, selection_type=@background_selection, diskern_type=@uniform_diskern, n_efs::Int64=1)::metapop
+function init_random_metapop(;num_indivs::Int64=1000, num_populations::Int64=20, selection_type=@background_selection, diskern_type=@uniform_diskern, ibd_decay = 0.1, n_efs::Int64=1)::metapop
     pops::Array{population} = get_random_populations(num_indivs, num_populations, selection_type, n_efs)
 
-    diskern::dispersal_kernel = (diskern_type == @uniform_diskern) ? init_uniform_diskern(num_populations) : init_ibd_diskern(pops)
+    diskern::dispersal_kernel = (diskern_type == @uniform_diskern) ? init_uniform_diskern(num_populations) : init_ibd_diskern(pops, diskern_strength=ibd_decay)
     mp::metapop = metapop(pops,diskern,num_indivs)
     return(mp)
 end
