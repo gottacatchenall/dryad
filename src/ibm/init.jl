@@ -95,8 +95,8 @@ function get_max_indivs_per_pop(mp::metapop)
 end
 
 
-function init_ibm(mp::metapop, g::genome; init_condition=false, rs=1)::ibm
-    max_n_indivs::Int64 = 2*mp.n_indivs
+function init_ibm(mp::metapop, g::genome, b; init_condition=false, rs=1)::ibm
+    max_n_indivs::Int64 = 5*b*mp.n_indivs
     n_loci::Int64 =  g.n_loci
     n_haplo::Int64 = g.n_haplo
     n_pops::Int64 = length(mp.populations)
@@ -112,15 +112,15 @@ function init_ibm(mp::metapop, g::genome; init_condition=false, rs=1)::ibm
     # split n_indivs evenly across pops
     ind_ct::Int64 = 1
     for p = 1:n_pops
-        k::Int64 = round(pops[p].k)
-        for i = 1:k
+        ni::Int64 = round(pops[p].k/10)
+        for i = 1:ni
             pop_map[ind_ct] = p
             ind_ct += 1
         end
     end
 
     genotypes::Array{Float64, 3} = zeros(max_n_indivs, n_loci, n_haplo)
-    fitness_map::Array{Float64, 1} = zeros(n_pops)
+    fitness_map::Array{Float64, 1} = zeros(max_n_indivs)
 
     if (!init_condition)
         init_uniform_genotypes(g, genotypes, ind_ct)

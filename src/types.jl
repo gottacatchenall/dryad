@@ -64,3 +64,6 @@ macro neutral_selection() return :(3) end
 
 macro extant() return :(1) end
 macro extinct() return :(0) end
+
+macro ibd_diskern() return :(1) end
+macro uniform_diskern() return :(0) end

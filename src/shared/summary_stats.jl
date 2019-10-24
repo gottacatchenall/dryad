@@ -57,6 +57,7 @@ function calc_jost_d(state::Array{Float64,2})
     H_T::Float64 = calc_ht(state)
     H_S::Float64 = calc_hs(state)
 
+
     non_empty_pops::Int64 = 0
     for p = 1:n_pops
         eff_pop_size::Float64 = sum(state[p,:])
@@ -69,6 +70,15 @@ function calc_jost_d(state::Array{Float64,2})
     if (non_empty_pops > 1)
         jostD = ((H_T - H_S)*non_empty_pops) / ((1.0 - H_S)*(non_empty_pops-1))
     end
+
+
+    #    println(state)
+    #    println(H_T, H_S)
+#        println(jostD)
+#        println()
+#        println()
+
+
     return(jostD)
 end
 
@@ -79,15 +89,15 @@ function calc_gst(state::Array{Float64,2})
     H_T::Float64 = calc_ht(state)
     H_S::Float64 = calc_hs(state)
 
-    if H_S == NaN || H_T == NaN
-        return 1.0
-    end
+    #### TODO
+            ## really think about this one
 
-    if H_T <= 0
-        return 1.0
+    if H_T == NaN || H_S == NaN || H_T == 0 || H_S == 0
+        return 0.0
     end
 
     gst::Float64 = (H_T - H_S) / (H_T)
+
     return(gst)
 end
 

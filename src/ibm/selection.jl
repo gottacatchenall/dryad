@@ -13,7 +13,7 @@ function selection(instance::ibm; b::Float64=3.0, s::Float64=3.0)
             efs::Array{Float64} = instance.mp.populations[pop].efs
             w::Float64 = calc_fitness(i, efs, instance, s)
 
-            instance.fitness_map[pop] += w
+            instance.fitness_map[i] = w
 
             surv::Bool = beverton_holt(w, n, k, b)
             if (!surv)
@@ -21,19 +21,10 @@ function selection(instance::ibm; b::Float64=3.0, s::Float64=3.0)
             end
         end
     end
-
-    # normalize mean fitnesses
-    for p = 1:n_pops
-        if (pop_cts[p] > 0)
-        instance.fitness_map[p] = instance.fitness_map[p] / pop_cts[p]
-        else
-            instance.fitness_map[p] = 0
-        end
-    end
 end
 
 function beverton_holt(w::Float64, n::Float64, k::Float64, b::Float64)
-    prob::Float64 = 1.0/(1.0 + ((b/2.0) - 1)*(n/k))
+    prob::Float64 = 1.0/(1.0 + (b - 1)*(n/k))
     u = rand()
     if (u < prob)
         return true

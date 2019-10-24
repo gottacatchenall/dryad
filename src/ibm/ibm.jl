@@ -1,25 +1,23 @@
 include("../types.jl")
 
-function run_ibm(mp::metapop, metadata::DataFrame; n_gen::Int64=1000, migration_rate::Float64=0.01, selection_strength::Float64=0.1,  b::Float64=3.0, log_freq::Int64=20, genome_file::String="genome.csv", pop_file::String="pops.csv", id::Int64 = 1, init_poly_ct::Float64 = 3.0, n_ef::Int64=1, n_chromo::Int64=5, genome_length=100.0, k::Int64=2000, rseed::Int64=1)
-
-    g::genome = init_random_genome(n_ef=n_ef, n_chromo=n_chromo, genome_length=genome_length, init_poly_ct=init_poly_ct)
+function run_ibm(mp::metapop, metadata::DataFrame; n_gen::Int64=1000, migration_rate::Float64=0.01, selection_strength::Float64=2.0,  b::Float64=2.0, log_freq::Int64=20, genome_file::String="genome.csv", pop_file::String="pops.csv", id::Int64 = 1, init_poly_ct::Float64 = 10.0, n_ef::Int64=1, n_chromo::Int64=5, genome_length=100.0, k::Int64=2000, rseed::Int64=1, loci_per_ef::Int64=50, n_loci=200)
+    g::genome = init_random_genome(n_ef=n_ef, n_chromo=n_chromo, genome_length=genome_length, init_poly_ct=init_poly_ct, n_loci_per_ef=loci_per_ef, n_loci=n_loci)
 
     # Run IBM
-    ibm_instance::ibm = init_ibm(mp, g, rs=rseed)
+    ibm_instance::ibm = init_ibm(mp, g, b, rs=rseed)
     update_ibm_metadata(metadata, id, migration_rate, selection_strength, k, n_ef, n_chromo, genome_length, init_poly_ct)
     run_n_generations(ibm_instance, n_gen, migration_rate, selection_strength, b, log_freq, genome_file, pop_file, id)
 
 end
 
 function run_n_generations(instance::ibm, n_gen::Int64, m::Float64, s::Float64, b::Float64, log_freq::Int64, genome_file::String, pop_file::String, id::Int64)
-
     n_log::Int64 = round(n_gen/log_freq)+1
     n_pops = length(instance.mp.populations)
     #n_log_pops::Int64 = n_log*n_pops
     #n_log_global::Int64 =
 
     genomeDF = DataFrame(gen=[], gst=[], jostd=[], mean_poly_ct_per_pop=[])
-    popDF = DataFrame(gen=[], pop=[], w_mean=[], prop_of_k=[], mean_poly_ct=[])
+    popDF = DataFrame(gen=[], pop=[], w_mean=[], n_indivs=[],prop_of_k=[], mean_poly_ct=[])
 
     st = @extant
 
@@ -32,6 +30,7 @@ function run_n_generations(instance::ibm, n_gen::Int64, m::Float64, s::Float64, 
         end
 
         if (st == @extinct)
+            print("extinct!")
             break
         end
 
@@ -57,7 +56,6 @@ function run_gen(instance::ibm, gen::Int64, mig_rate::Float64, s::Float64, b::Fl
         logging(instance, gen, globalDF, popDF, log_pt)
     end
 
-    st = reproduction(instance)
-
+    st = reproduction(instance, b)
     return st
 end

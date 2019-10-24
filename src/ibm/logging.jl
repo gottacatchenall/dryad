@@ -7,15 +7,41 @@ function logging(instance::ibm, gen::Int64, genomeDF::DataFrame, popDF::DataFram
     log_pop_data(instance, allele_freq_map, popDF, gen)
 end
 
-function log_pop_data(instance::ibm, allele_freq_map::Array{Array{Float64,2}}, popDF::DataFrame, gen::Int64)
-    n_pops = length(instance.fitness_map)
+function calc_mean_fitness(instance::ibm)
+    n_indivs = length(instance.fitness_map)
+    n_pops = length(instance.mp.populations)
+    mean_fitness = zeros(n_pops)
+
     pop_cts::Array{Float64, 1} = get_cts(instance)
 
+
+    for i in 1:n_indivs
+        this_pop = instance.population_map[i]
+        if this_pop != 0
+            mean_fitness[this_pop] += instance.fitness_map[i]
+        end
+    end
+
+    for p in 1:n_pops
+        mean_fitness[p] = mean_fitness[p] / pop_cts[p]
+    end
+
+    return (mean_fitness)
+end
+
+function log_pop_data(instance::ibm, allele_freq_map::Array{Array{Float64,2}}, popDF::DataFrame, gen::Int64)
+    n_pops = length(instance.mp.populations)
+    pop_cts::Array{Float64, 1} = get_cts(instance)
+
+    w_bars = calc_mean_fitness(instance)
+
     for p = 1:n_pops
+        w_bar = w_bars[p]
+
         push!(popDF.gen, gen)
         push!(popDF.pop, p)
-        push!(popDF.w_mean, instance.fitness_map[p])
-
+        push!(popDF.w_mean, w_bar)
+        push!(popDF.n_indivs, pop_cts[p])
         prop_k::Float64 = pop_cts[p] / instance.mp.populations[p].k
         push!(popDF.prop_of_k, prop_k)
 

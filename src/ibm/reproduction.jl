@@ -1,5 +1,5 @@
 
-function reproduction(instance::ibm)
+function reproduction(instance::ibm, b)
     n_pops::Int64 = length(instance.mp.populations)
     indivs_by_pop::Array{Array{Int64,1}} = split_by_pop(instance.population_map, n_pops)
 
@@ -7,26 +7,42 @@ function reproduction(instance::ibm)
 
 
     i_ct::Int64 = 1
+    new_pop_map::Array{Int64,1} = zeros(length(instance.population_map))
+
     for p = 1:n_pops
-        if (length(indivs_by_pop[p]) > 1)
-            mean_w::Float64 = instance.fitness_map[p]
-            k::Float64 = instance.mp.populations[p].k
-            exp_num_off::Int64 = round(k*mean_w)
+        #print("\t pop", p, ": ", length(indivs_by_pop[p]))
+        next_gen_ct = 0
+        for i in indivs_by_pop[p]
+            base_num_off = floor(b*instance.fitness_map[i])
+            remainder = b*instance.fitness_map[i] - floor(b*instance.fitness_map[i])
+            u = rand(Uniform(0,1))
+
+            exp_num_off::Int64 = base_num_off
+            if (u < remainder)
+                exp_num_off += 1
+            end
+
+
+            parents_index::Array{Int64} = get_parent(i, indivs_by_pop[p])
 
             for i = 1:exp_num_off
-                parents_index::Array{Int64} = get_parents(indivs_by_pop[p])
-
+                next_gen_ct += 1
                 parent1_genome::Array{Float64, 2} = parent_genotypes[parents_index[1], :,:]
                 parent2_genome::Array{Float64, 2} = parent_genotypes[parents_index[2], :,:]
 
                 offspring_genome::Array{Float64, 2} = get_new_genome(parent1_genome, parent2_genome, instance.g)
 
                 instance.genotypes[i_ct,:,:] = offspring_genome
-                instance.population_map[i_ct] = p
+                new_pop_map[i_ct] = p
                 i_ct += 1
             end
         end
+        instance.population_map = new_pop_map
+        #println("\t\t next gen: ", next_gen_ct)
+        #println("\t\t ", instance.population_map)
     end
+
+
 
     if (i_ct == 1)
         return @extinct
@@ -98,8 +114,7 @@ function get_new_haplotype(parent_genome::Array{Float64, 2}, g::genome)
 end
 
 
-function get_parents(this_pop_indivs::Array{Int64,1})
-    p1::Int64 = this_pop_indivs[rand(1:length(this_pop_indivs))]
+function get_parent(p1::Int64, this_pop_indivs::Array{Int64,1})
     p2::Int64 = p1
     while p2 == p1
         p2 = this_pop_indivs[rand(1:length(this_pop_indivs))]

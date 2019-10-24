@@ -84,12 +84,12 @@ function run_batch_ibm()
 end
 
 function fits()
-    n_als = (5, 10, 20)
-    n_pops = (10, 25, 50, 100)
-    mig_rates = collect(0.001:0.0001:0.01)
-    k_vals = (500, 2000, 4000)
+    n_als = (3)
+    n_pops = (10)
+    mig_rates = (0.000001)
+    k_vals = (2000)
     n_gen = 20000
-    n_rep = 10
+    n_rep = 1
 
     fits_metadata::DataFrame = DataFrame(id=[], m=[], k=[],init_poly_ct=[],n_pops=[])
 
@@ -102,12 +102,12 @@ function fits()
     rseedgenerator = MersenneTwister(base_random_seed)
 
 
-    lf = 100
+    lf = 500
     idct::Int64 = 0
-    mp::metapop = init_random_metapop()
     for m in mig_rates
         for ipc in n_als
             for n_pop in n_pops
+                mp::metapop = init_random_metapop(num_populations=n_pop)
                 for k in k_vals
                     set_mp_total_k(mp, k)
                     for rep = 1:n_rep
@@ -118,7 +118,6 @@ function fits()
                         ## ================================
                                 print("\tFITS:  ")
                                 @time run_fits(mp, fits_metadata, n_gen=n_gen, ipc=convert(Int64,ipc), migration_rate=m, log_freq=lf, rseed=rs, id=idct, k=k, fits_file=fits_file)
-                                CSV.write("fits.csv", df, append=true)
                                 idct = idct + 1
                     end
                 end
@@ -131,6 +130,7 @@ end
 
 #param_dict = Dict("m" => [0.01, 0.1], "ipc" => [3, 8, 15], "k" => [2000, 4000, 6000])
 #create_treatments(param_dict)
+
 @time fits()
 #@time run_batch_ibm()
 #run_test()
