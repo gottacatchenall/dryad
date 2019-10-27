@@ -18,5 +18,5 @@ batch_fits(
         base_random_seed = 5,
         metadata_file="uniform_fits_metadata.csv",
         data_file="uniform_fits.csv",
-        diskern_type=@uniform_diskern
+        dispersal_kernel_type=@uniform_diskern
 )
