@@ -1,28 +1,50 @@
 include("../types.jl")
 
-#=                 fits_instance::fits = fits(mp, n_alleles=convert(Int64,ipc), migration_rate=m, log_freq=lf, n_gen=n_gen)
-                init_fits_uniform_ic(fits_instance)
-                update_fits_metadata(fits_metadata, id_ct, m, k, ipc)
-                df = run_fits(fits_instance, id_ct)
-                CSV.write(fits_file, df, append=true) =#
+function batch_fits(treatment_df; num_generations::Int64 = 20000, log_frequency::Int64 = 100, replicates_per_treatment::Int64=50, metadata_file="fits_metadata.csv", data_file="fits.csv", base_random_seed::Int64 = 5, dispersal_kernel_type = @ibd_diskern)
 
-function run_fits(mp::metapop, metadata; n_gen::Int64=1000, ipc::Int64=5, migration_rate::Float64=0.01, log_freq::Int64=20, id::Int64=1, rseed::Int64=1, k::Int64=1000, fits_file::String="fits.csv")
+    rseedgenerator = MersenneTwister(base_random_seed)
 
-    # fits(mp::metapop; n_alleles::Int64=5, migration_rate::Float64=0.01, n_gen=300, log_freq=20, rseed=1) = new(mp, length(mp.populations), n_alleles, n_gen, log_freq, migration_rate, zeros(Float64, length(mp.populations), n_alleles), MersenneTwister(rseed))
+    CSV.write(metadata_file, treatment_df)
+
+    for (treatment_ct, row) in enumerate(eachrow(treatment_df))
+        k = row.k
+        ibd_str = row.ibd_str
+        m = row.m
+        ipc = row.ipc
+        n_pops = row.n_pops
+
+        for rep = 1:replicates_per_treatment
+            mp::metapop = init_random_metapop(num_populations=n_pops, diskern_type=dispersal_kernel_type, ibd_decay=ibd_str)
+            set_mp_total_k(mp, k)
+
+            rs = rand(rseedgenerator, DiscreteUniform(1, 10^10))
+
+            run_fits(
+                    mp,
+                    n_gen=num_generations,
+                    ipc = ipc,
+                    migration_rate = m,
+                    log_freq = log_frequency,
+                    rseed = rs,
+                    treatment = treatment_ct,
+                    replicate = rep,
+                    k = k,
+                    fits_file = data_file,
+                    ibd_str = ibd_str
+            )
+        end
+    end
+end
+
+
+function run_fits(mp::metapop; n_gen::Int64=1000, ipc::Int64=5, migration_rate::Float64=0.01, log_freq::Int64=20, treatment::Int64=1, replicate::Int64=1, rseed::Int64=1, k::Int64=1000, ibd_str=0, fits_file::String="fits.csv")
 
     fits_instance::fits = fits(mp, migration_rate=migration_rate, n_alleles=ipc, log_freq=log_freq, n_gen=n_gen, rseed=rseed)
     init_fits_uniform_ic(fits_instance)
 
     n_pops = length(mp.populations)
 
-    update_fits_metadata(metadata, id, migration_rate, k, ipc, n_pops)
-
-
-    df = DataFrame()
-    df.id = []
-    df.gen = []
-    df.jostd = []
-    df.gst = []
+    df = DataFrame(treatment = [], replicate = [], gen = [], jostd = [], gst = [])
 
     all_pops = collect(1:n_pops)
     for g = 0:n_gen
@@ -30,12 +52,14 @@ function run_fits(mp::metapop, metadata; n_gen::Int64=1000, ipc::Int64=5, migrat
             state::Array{Float64} = fits_instance.ct_map
             jostd::Float64 = calc_jost_d(state)
             gst::Float64 = calc_gst(state)
-            update_df(df,id,g,jostd,gst)
+            update_df(df, treatment, replicate, g, jostd, gst)
         end
         run_gen(fits_instance)
     end
 
-    CSV.write(fits_file, df, append=true)
+
+    # append if not empty
+    CSV.write(fits_file, df, append=isfile(fits_file))
 end
 
 function init_fits_uniform_ic(instance::fits)
@@ -167,8 +191,9 @@ function update_fits_metadata(metadata::DataFrame, id_ct::Int64, m::Float64, k::
     push!(metadata.n_pops, n_pops)
 end
 
-function update_df(df::DataFrame, idct::Int64, gen::Int64, jost_d::Float64, gst::Float64)
-    push!(df.id,idct)
+function update_df(df::DataFrame, treatment::Int64, replicate::Int64, gen::Int64, jost_d::Float64, gst::Float64)
+    push!(df.treatment,treatment)
+    push!(df.replicate, replicate)
     push!(df.gen, gen)
     push!(df.jostd, jost_d)
     push!(df.gst, gst)
