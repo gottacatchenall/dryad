@@ -2,10 +2,10 @@ include("./src/include.jl")
 
 param_dict = Dict(
     "ipc"       => [10],
-    "m"         => vcat(collect(0.0001:0.00001:0.003), collect(0.003:0.0001:0.01)),
-    "n_pops"    => [20],
-    "k"         => [2000],
-    "ibd_str"   => [0.5, 1.5, 3.0]
+    "m"         => collect(10^-10:0.0001:10^-2),
+    "n_pops"    => [5, 20, 40],
+    "k"         => [500, 2000, 4000],
+    "ibd_str"   => [3.0, 8.0, 15.0]
 )
 
 treatment_df = create_treatments(param_dict)
@@ -16,7 +16,7 @@ batch_fits(
         replicates_per_treatment = 100,
         log_frequency = 500,
         base_random_seed = 5,
-        metadata_file="ibd_fits_metadata.csv",
-        data_file="ibd_fits.csv",
+        metadata_file="more_ibd_metadata.csv",
+        data_file="more_ibd.csv",
         dispersal_kernel_type=@ibd_diskern
 )
