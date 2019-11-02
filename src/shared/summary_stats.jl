@@ -83,11 +83,13 @@ function calc_gst(state::Array{Float64,2})
 
 
     # check total polymorphism count
-    # if all fixed, call it Gst 0 
+    # if all fixed, call it Gst 0
 
 
-    if H_T == NaN || H_S == NaN || H_T == 0 || H_S == 0
+    if H_T == NaN || H_S == NaN
         return 0.0
+    elseif H_T == 0 || H_S == 0
+        return 1.0
     end
 
     gst::Float64 = (H_T - H_S) / (H_T)

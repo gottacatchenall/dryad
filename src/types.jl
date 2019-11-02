@@ -24,9 +24,10 @@ mutable struct fits
     n_gen::Int64
     log_freq::Int64
     migration_rate::Float64
+    mutation_rate::Float64
     ct_map::Array{Float64}
     rng::MersenneTwister
-    fits(mp::metapop; n_alleles::Int64=5, migration_rate::Float64=0.01, n_gen=300, log_freq=20, rseed=1) = new(mp, length(mp.populations), n_alleles, n_gen, log_freq, migration_rate, zeros(Float64, length(mp.populations), n_alleles), MersenneTwister(rseed))
+    fits(mp::metapop; n_alleles::Int64=5, mutation_rate::Float64 = 10^-5, migration_rate::Float64=0.01, n_gen=300, log_freq=20, rseed=1) = new(mp, length(mp.populations), n_alleles, n_gen, log_freq, migration_rate, mutation_rate, zeros(Float64, length(mp.populations), n_alleles), MersenneTwister(rseed))
 end
 
 

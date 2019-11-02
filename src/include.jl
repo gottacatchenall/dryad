@@ -7,6 +7,7 @@ using LinearAlgebra
 using IterTools
 using Printf
 using ProgressMeter
+using Distributed
 
 include("./mp/init.jl")
 

@@ -1,17 +1,72 @@
 include("../types.jl")
 
+function batch_fits_multicore(treatment_df, n_cores::Int64; num_generations::Int64 = 20000, log_frequency::Int64 = 100, replicates_per_treatment::Int64=50, metadata_file="fits_metadata.csv", data_file="fits.csv", base_random_seed::Int64 = 5, dispersal_kernel_type = @ibd_diskern)
+
+    # split treatment df up according to how many
+    treatments_per_core::Int64 = ceil(size(treatment_df)[1] / n_cores)
+    @printf("treats: %d, cores: %d, treatments_per_core: %d\n", size(treatment_df)[1], n_cores, treatments_per_core)
+
+    treatment_dfs::Array{DataFrame} = []
+
+    filenames::Array{String} = []
+    base_str::String = split(data_file, ".")[1]
+    print(base_str)
+
+    for core = 1:n_cores
+        filename = string(base_str, "_core", core)
+        push!(filenames, filename)
+
+
+        lo = (core-1)*treatments_per_core + 1
+        hi = (core)*treatments_per_core
+        push!(treatment_dfs, treatment_df[lo:hi, :])
+    end
+
+
+    # filename for each treatment
+
+    procs = []
+
+    for (core, df) in enumerate(treatment_dfs)
+        base_str = (filenames[core])
+        this_metadata::String = string(base_str, "_metadata.csv")
+        this_data::String = string(base_str, ".csv")
+
+        s = @spawn batch_fits(
+                        df,
+                        num_generations=num_generations,
+                        replicates_per_treatment = replicates_per_treatment,
+                        log_frequency = log_frequency,
+                        base_random_seed = 5,
+                        metadata_file=this_metadata,
+                        data_file=this_data,
+                        dispersal_kernel_type=dispersal_kernel_type
+                    )
+        @show s
+        push!(procs, s)
+    end
+
+    for proc in procs
+        fetch(proc)
+    end
+
+
+end
+
 function batch_fits(treatment_df; num_generations::Int64 = 20000, log_frequency::Int64 = 100, replicates_per_treatment::Int64=50, metadata_file="fits_metadata.csv", data_file="fits.csv", base_random_seed::Int64 = 5, dispersal_kernel_type = @ibd_diskern)
 
     rseedgenerator = MersenneTwister(base_random_seed)
 
     CSV.write(metadata_file, treatment_df)
 
-    for (treatment_ct, row) in enumerate(eachrow(treatment_df))
+    for (iter, row) in enumerate(eachrow(treatment_df))
         k = row.k
         ibd_str = row.ibd_str
         m = row.m
         ipc = row.ipc
         n_pops = row.n_pops
+
+        treatment_ct = row.treatment
 
         @printf("Treatment %d: \t (k=%d, ibd_str=%f, m=%f, ipc=%d, npops=%d)\n\t\t", treatment_ct, k, ibd_str, m, ipc, n_pops)
 
@@ -157,10 +212,54 @@ function migration(pop_from::Int64, pop_from_cts::Array{Float64}, n_indivs_leavi
     end
 end
 
+function extinct_poly_location(state::Array{Float64,2})
+    (x,y) = size(state)
+    for j = 1:y
+        ext::Bool = true
+        for i = 1:x
+            if state[i,j] > 0
+                ext = false
+            end
+        end
+        if ext
+            return j
+        end
+    end
+
+    return 0
+end
+
+function random_mutation(state::Array{Float64, 2}, poly_location)
+    (n_pops,n_poly) = size(state)
+
+    rand_pop::Int64 = rand(DiscreteUniform(1,n_pops))
+    rand_i::Int64 = rand(DiscreteUniform(1,n_poly))
+
+    while state[rand_pop, rand_i] < 1
+        rand_i = rand(DiscreteUniform(1,n_poly))
+    end
+
+    state[rand_pop, rand_i] -= 1
+    state[rand_pop, poly_location] += 1
+
+end
+
 function run_gen(instance::fits)
     n_p::Int64 = instance.n_pops
     n_al::Int64 = instance.n_alleles
     migration_rate::Float64 = instance.migration_rate
+    mu::Float64 = instance.mutation_rate
+    # consider 1 possible mutation per generation
+    # only add it if there is an polymorphism location that is empty everywhere
+
+    ext_poly_location = extinct_poly_location(instance.ct_map)
+    if ext_poly_location > 0
+        if rand(Uniform()) < mu
+            random_mutation(instance.ct_map, ext_poly_location)
+        end
+    end
+    #  mutate an individual in a random population
+
 
     post_drift::Array{Float64} = zeros(n_p, n_al)
     for p = 1:n_p
