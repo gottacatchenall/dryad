@@ -2,7 +2,7 @@ function create_treatments(param_dict::Dict)
 	names::Array{String} = []
 	vals = []
 	treatment_df = DataFrame(names...)
-	treatment_df.treatment_ct = []
+	treatment_df.treatment = []
 
 	for (param_name, param_values) in param_dict
 		push!(names, param_name)
@@ -16,7 +16,7 @@ function create_treatments(param_dict::Dict)
 			param = names[i]
 			push!(treatment_df[!, Symbol(param)], val)
 		end
-		push!(treatment_df.treatment_ct, ct)
+		push!(treatment_df.treatment, ct)
 		ct += 1
 	end
 

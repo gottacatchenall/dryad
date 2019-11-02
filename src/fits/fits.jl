@@ -16,11 +16,8 @@ function batch_fits(treatment_df; num_generations::Int64 = 20000, log_frequency:
         @printf("Treatment %d: \t (k=%d, ibd_str=%f, m=%f, ipc=%d, npops=%d)\n\t\t", treatment_ct, k, ibd_str, m, ipc, n_pops)
 
         @showprogress for rep = 1:replicates_per_treatment
-            println("ibd str: ", ibd_str)
             mp::metapop = init_random_metapop(num_populations=n_pops, diskern_type=dispersal_kernel_type, ibd_decay=ibd_str)
             set_mp_total_k(mp, k)
-            println(mp.diskern)
-            println()
 
             rs = rand(rseedgenerator, DiscreteUniform(1, 10^10))
 
