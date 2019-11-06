@@ -64,6 +64,8 @@ function batch_fits(treatment_df; num_generations::Int64 = 20000, log_frequency:
         ibd_str = row.ibd_str
         m = row.m
         ipc = row.ipc
+        mu = row.mutation_rate
+        println("mu: ", mu)
         n_pops = row.n_pops
 
         treatment_ct = row.treatment
@@ -81,6 +83,7 @@ function batch_fits(treatment_df; num_generations::Int64 = 20000, log_frequency:
                     n_gen=num_generations,
                     ipc = ipc,
                     migration_rate = m,
+                    mutation_rate = mu,
                     log_freq = log_frequency,
                     rseed = rs,
                     treatment = treatment_ct,
@@ -95,9 +98,9 @@ function batch_fits(treatment_df; num_generations::Int64 = 20000, log_frequency:
 end
 
 
-function run_fits(mp::metapop; n_gen::Int64=1000, ipc::Int64=5, migration_rate::Float64=0.01, log_freq::Int64=20, treatment::Int64=1, replicate::Int64=1, rseed::Int64=1, k::Int64=1000, ibd_str=0, fits_file::String="fits.csv")
+function run_fits(mp::metapop; n_gen::Int64=1000, ipc::Int64=5, mutation_rate::Float64 = 10^5, migration_rate::Float64=0.01, log_freq::Int64=20, treatment::Int64=1, replicate::Int64=1, rseed::Int64=1, k::Int64=1000, ibd_str=0, fits_file::String="fits.csv")
 
-    fits_instance::fits = fits(mp, migration_rate=migration_rate, n_alleles=ipc, log_freq=log_freq, n_gen=n_gen, rseed=rseed)
+    fits_instance::fits = fits(mp, mutation_rate=mutation_rate, migration_rate=migration_rate, n_alleles=ipc, log_freq=log_freq, n_gen=n_gen, rseed=rseed)
     init_fits_uniform_ic(fits_instance)
 
     n_pops = length(mp.populations)

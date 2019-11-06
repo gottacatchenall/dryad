@@ -19,6 +19,5 @@ function create_treatments(param_dict::Dict)
 		push!(treatment_df.treatment, ct)
 		ct += 1
 	end
-
 	return(treatment_df)
 end
