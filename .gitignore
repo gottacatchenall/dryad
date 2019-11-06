@@ -11,3 +11,4 @@
 ./bin/mpfm.dSYM/
 ./bin/mpfm
 node_modules/
+builddir/
