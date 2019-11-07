@@ -48,9 +48,8 @@ function batch_fits_multicore(treatment_df, n_cores::Int64; num_generations::Int
 
     for proc in procs
         fetch(proc)
+        println(proc)
     end
-
-
 end
 
 function batch_fits(treatment_df; num_generations::Int64 = 20000, log_frequency::Int64 = 100, replicates_per_treatment::Int64=50, metadata_file="fits_metadata.csv", data_file="fits.csv", base_random_seed::Int64 = 5, dispersal_kernel_type = @ibd_diskern)
@@ -235,7 +234,8 @@ function random_mutation(state::Array{Float64, 2}, poly_location)
     (n_pops,n_poly) = size(state)
 
     rand_pop::Int64 = rand(DiscreteUniform(1,n_pops))
-    while sum(state[rand_pop,:] < 1)
+
+    while (sum(state[rand_pop,:]) < 1)
         rand_pop = rand(DiscreteUniform(1,n_pops))
     end
 
@@ -247,7 +247,6 @@ function random_mutation(state::Array{Float64, 2}, poly_location)
 
     state[rand_pop, rand_i] -= 1
     state[rand_pop, poly_location] += 1
-
 end
 
 function run_gen(instance::fits)
