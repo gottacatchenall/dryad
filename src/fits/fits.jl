@@ -65,7 +65,6 @@ function batch_fits(treatment_df; num_generations::Int64 = 20000, log_frequency:
         m = row.m
         ipc = row.ipc
         mu = row.mutation_rate
-        println("mu: ", mu)
         n_pops = row.n_pops
 
         treatment_ct = row.treatment
@@ -236,6 +235,10 @@ function random_mutation(state::Array{Float64, 2}, poly_location)
     (n_pops,n_poly) = size(state)
 
     rand_pop::Int64 = rand(DiscreteUniform(1,n_pops))
+    while sum(state[rand_pop,:] < 1)
+        rand_pop = rand(DiscreteUniform(1,n_pops))
+    end
+
     rand_i::Int64 = rand(DiscreteUniform(1,n_poly))
 
     while state[rand_pop, rand_i] < 1
