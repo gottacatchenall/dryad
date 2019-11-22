@@ -19,6 +19,11 @@ function batch_fits_multicore(treatment_df, n_cores::Int64; num_generations::Int
 
         lo = (core-1)*treatments_per_core + 1
         hi = (core)*treatments_per_core
+
+        if (hi < size(treatment_df)[1])
+            hi = size(treatment_df)[1]
+        end
+
         push!(treatment_dfs, treatment_df[lo:hi, :])
     end
 

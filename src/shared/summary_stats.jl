@@ -86,9 +86,7 @@ function calc_gst(state::Array{Float64,2})
     # if all fixed, call it Gst 0
 
 
-    if H_S == NaN
-        return 0.0
-    elseif H_T == 0 || H_S == 0 || H_T == NaN
+    if H_T == 0 || H_S == 0 || H_T == NaN
         return 1.0
     end
 
