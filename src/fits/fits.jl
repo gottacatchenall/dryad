@@ -1,62 +1,5 @@
 include("../types.jl")
 
-function batch_fits_multicore(treatment_df, n_cores::Int64; num_generations::Int64 = 20000, log_frequency::Int64 = 100, replicates_per_treatment::Int64=50, metadata_file="fits_metadata.csv", data_file="fits.csv", base_random_seed::Int64 = 5, dispersal_kernel_type = @ibd_diskern)
-
-    # split treatment df up according to how many
-    treatments_per_core::Int64 = ceil(size(treatment_df)[1] / n_cores)
-    @printf("treats: %d, cores: %d, treatments_per_core: %d\n", size(treatment_df)[1], n_cores, treatments_per_core)
-
-    treatment_dfs::Array{DataFrame} = []
-
-    filenames::Array{String} = []
-    base_str::String = split(data_file, ".")[1]
-    print(base_str)
-
-    for core = 1:n_cores
-        filename = string(base_str, "_core", core)
-        push!(filenames, filename)
-
-
-        lo = (core-1)*treatments_per_core + 1
-        hi = (core)*treatments_per_core
-
-        if (hi < size(treatment_df)[1])
-            hi = size(treatment_df)[1]
-        end
-
-        push!(treatment_dfs, treatment_df[lo:hi, :])
-    end
-
-
-    # filename for each treatment
-
-    procs = []
-
-    for (core, df) in enumerate(treatment_dfs)
-        base_str = (filenames[core])
-        this_metadata::String = string(base_str, "_metadata.csv")
-        this_data::String = string(base_str, ".csv")
-
-        s = @spawn batch_fits(
-                        df,
-                        num_generations=num_generations,
-                        replicates_per_treatment = replicates_per_treatment,
-                        log_frequency = log_frequency,
-                        base_random_seed = 5,
-                        metadata_file=this_metadata,
-                        data_file=this_data,
-                        dispersal_kernel_type=dispersal_kernel_type
-                    )
-        @show s
-        push!(procs, s)
-    end
-
-    for proc in procs
-        fetch(proc)
-        println(proc)
-    end
-end
-
 function batch_fits(treatment_df; num_generations::Int64 = 20000, log_frequency::Int64 = 100, replicates_per_treatment::Int64=50, metadata_file="fits_metadata.csv", data_file="fits.csv", base_random_seed::Int64 = 5, dispersal_kernel_type = @ibd_diskern)
 
     rseedgenerator = MersenneTwister(base_random_seed)
@@ -309,4 +252,61 @@ function update_df(df::DataFrame, treatment::Int64, replicate::Int64, gen::Int64
     push!(df.gen, gen)
     push!(df.jostd, jost_d)
     push!(df.gst, gst)
+end
+
+
+function batch_fits_multicore(treatment_df, n_cores::Int64; num_generations::Int64 = 20000, log_frequency::Int64 = 100, replicates_per_treatment::Int64=50, metadata_file="fits_metadata.csv", data_file="fits.csv", base_random_seed::Int64 = 5, dispersal_kernel_type = @ibd_diskern)
+
+    # split treatment df up according to how many
+    treatments_per_core::Int64 = ceil(size(treatment_df)[1] / n_cores)
+    @printf("treats: %d, cores: %d, treatments_per_core: %d\n", size(treatment_df)[1], n_cores, treatments_per_core)
+
+    treatment_dfs::Array{DataFrame} = []
+
+    filenames::Array{String} = []
+    base_str::String = split(data_file, ".")[1]
+    print(base_str)
+
+    for core = 1:n_cores
+        filename = string(base_str, "_core", core)
+        push!(filenames, filename)
+
+
+        lo = (core-1)*treatments_per_core + 1
+        hi = (core)*treatments_per_core
+
+        if (hi < size(treatment_df)[1])
+            hi = size(treatment_df)[1]
+        end
+
+        push!(treatment_dfs, treatment_df[lo:hi, :])
+    end
+
+
+    # filename for each treatment
+
+    procs = []
+
+    for (core, df) in enumerate(treatment_dfs)
+        base_str = (filenames[core])
+        this_metadata::String = string(base_str, "_metadata.csv")
+        this_data::String = string(base_str, ".csv")
+
+        s = @spawn batch_fits(
+                        df,
+                        num_generations=num_generations,
+                        replicates_per_treatment = replicates_per_treatment,
+                        log_frequency = log_frequency,
+                        base_random_seed = 5,
+                        metadata_file=this_metadata,
+                        data_file=this_data,
+                        dispersal_kernel_type=dispersal_kernel_type
+                    )
+        push!(procs, s)
+    end
+
+    for proc in procs
+        fetch(proc)
+        println(proc)
+    end
 end
