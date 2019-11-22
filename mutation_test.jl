@@ -6,7 +6,7 @@ param_dict = Dict(
     "n_pops"    => [20],
     "k"         => [2000],
     "ibd_str"   => [8.0],
-    "mutation_rate" => [10^-5, 10^-4, 10^-3]
+    "mutation_rate" => [10^-9, 10^-7, 10^-5]
 )
 
 treatment_df = create_treatments(param_dict)
