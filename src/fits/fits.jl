@@ -292,7 +292,7 @@ function batch_fits_multicore(treatment_df, n_cores::Int64; num_generations::Int
         this_metadata::String = string(base_str, "_metadata.csv")
         this_data::String = string(base_str, ".csv")
 
-        s = @spawn batch_fits(
+        s = @spawnat core batch_fits(
                         df,
                         num_generations=num_generations,
                         replicates_per_treatment = replicates_per_treatment,
