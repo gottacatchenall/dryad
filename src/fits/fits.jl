@@ -1,6 +1,6 @@
 include("../types.jl")
 
-function batch_fits(treatment_df; num_generations::Int64 = 20000, log_frequency::Int64 = 100, replicates_per_treatment::Int64=50, metadata_file="fits_metadata.csv", data_file="fits.csv", base_random_seed::Int64 = 5, dispersal_kernel_type = @ibd_diskern)
+function batch_fits(treatment_df; num_generations::Int64 = 20000, log_frequency::Int64 = 100, replicates_per_treatment::Int64=50, metadata_file="metadata.csv", data_file="fits.csv", base_random_seed::Int64 = 5, dispersal_kernel_type = @rect_diskern)
 
     rseedgenerator = MersenneTwister(base_random_seed)
 
@@ -21,6 +21,9 @@ function batch_fits(treatment_df; num_generations::Int64 = 20000, log_frequency:
         @showprogress for rep = 1:replicates_per_treatment
             mp::metapop = init_random_metapop(num_populations=n_pops, diskern_type=dispersal_kernel_type, ibd_decay=ibd_str)
             set_mp_total_k(mp, k)
+
+            log_metapop(treatment_ct, rep, mp)
+
 
             rs = rand(rseedgenerator, DiscreteUniform(1, 10^10))
 
@@ -44,7 +47,7 @@ function batch_fits(treatment_df; num_generations::Int64 = 20000, log_frequency:
 end
 
 
-function run_fits(mp::metapop; n_gen::Int64=1000, ipc::Int64=5, mutation_rate::Float64 = 10^5, migration_rate::Float64=0.01, log_freq::Int64=20, treatment::Int64=1, replicate::Int64=1, rseed::Int64=1, k::Int64=1000, ibd_str=0, fits_file::String="fits.csv")
+function run_fits(mp::metapop; n_gen::Int64=1000, ipc::Int64=5, mutation_rate::Float64 = 10^5, migration_rate::Float64=0.01, log_freq::Int64=20, treatment::Int64=1, replicate::Int64=1, rseed::Int64=1, k::Int64=1000, ibd_str=0, freq_file::String="freqs.csv", fits_file::String="data.csv")
 
     fits_instance::fits = fits(mp, mutation_rate=mutation_rate, migration_rate=migration_rate, n_alleles=ipc, log_freq=log_freq, n_gen=n_gen, rseed=rseed)
     init_fits_uniform_ic(fits_instance)
@@ -53,12 +56,16 @@ function run_fits(mp::metapop; n_gen::Int64=1000, ipc::Int64=5, mutation_rate::F
 
     df = DataFrame(treatment = [], replicate = [], gen = [], jostd = [], gst = [])
 
+    frequency_df = DataFrame(treatment = [], replicate = [], gen=[], pop=[], allele_id = [], ct=[], freq = [])
+
     all_pops = collect(1:n_pops)
     for g = 0:n_gen
         if g % log_freq == 0
             state::Array{Float64} = fits_instance.ct_map
             jostd::Float64 = calc_jost_d(state)
             gst::Float64 = calc_gst(state)
+
+            update_frequency_df(frequency_df, treatment, replicate, g, state)
             update_df(df, treatment, replicate, g, jostd, gst)
         end
         run_gen(fits_instance)
@@ -66,6 +73,7 @@ function run_fits(mp::metapop; n_gen::Int64=1000, ipc::Int64=5, mutation_rate::F
 
 
     # append if not empty
+    CSV.write(freq_file, frequency_df, append=isfile(freq_file))
     CSV.write(fits_file, df, append=isfile(fits_file))
 end
 
@@ -232,9 +240,12 @@ function run_gen(instance::fits)
         if (rand(Uniform()) < rem)
             extra_mig = 1
         end
+
         n_indivs_leaving::Int64 = (floor(exp_n_alleles_leaving) + extra_mig)
 
-        migration(p, post_drift[p,:], n_indivs_leaving, instance)
+        if sum(instance.mp.diskern.D[p,:]) > 0
+            migration(p, post_drift[p,:], n_indivs_leaving, instance)
+        end
     end
 end
 
@@ -254,8 +265,68 @@ function update_df(df::DataFrame, treatment::Int64, replicate::Int64, gen::Int64
     push!(df.gst, gst)
 end
 
+#     frequency_df = DataFrame(treatment = [], replicate = [], gen=[], pop=[], allele_id = [], freq = [])
+function update_frequency_df(frequency_df::DataFrame, treatment::Int64, replicate::Int64, gen::Int64, state::Array{Float64,2})
 
-function batch_fits_multicore(treatment_df, n_cores::Int64; num_generations::Int64 = 20000, log_frequency::Int64 = 100, replicates_per_treatment::Int64=50, metadata_file="fits_metadata.csv", data_file="fits.csv", base_random_seed::Int64 = 5, dispersal_kernel_type = @ibd_diskern)
+    n_pop = size(state)[1]
+    n_poly = size(state)[2]
+
+    for pop = 1:n_pop
+        pop_size::Float64 = sum(state[pop,:])
+        for poly = 1:n_poly
+            freq::Float64 = state[pop,poly]/pop_size
+
+            push!(frequency_df.treatment,treatment)
+            push!(frequency_df.replicate, replicate)
+            push!(frequency_df.gen, gen)
+            push!(frequency_df.pop, pop)
+            push!(frequency_df.allele_id, poly)
+            push!(frequency_df.ct, state[pop,poly])
+            push!(frequency_df.freq, freq)
+        end
+    end
+end
+
+function log_metapop(treatment::Int64, rep::Int64, mp::metapop; mp_file="metapop.csv", diskern_file="diskern.csv")
+    # log pops and locations
+    # log diskern i,j
+
+    # make a dataframe with the columns you want
+
+    pops_df = DataFrame(treatment=[], replicate=[], pop=[], x=[], y=[])
+
+    n_pops = length(mp.populations)
+    for pop in 1:n_pops
+        this_pop::population = mp.populations[pop]
+        x::Float64 = this_pop.x
+        y::Float64 = this_pop.y
+
+        push!(pops_df.treatment, treatment)
+        push!(pops_df.replicate, rep)
+        push!(pops_df.pop, pop)
+        push!(pops_df.x, x)
+        push!(pops_df.y, y)
+    end
+
+    diskern_df = DataFrame(treatment=[], replicate=[], pop1=[], pop2=[], dispersal_prob=[])
+
+    for p1 in 1:n_pops
+        for p2 in 1:n_pops
+            disp_prob = mp.diskern.D[p1,p2]
+
+            push!(diskern_df.treatment, treatment)
+            push!(diskern_df.replicate, rep)
+            push!(diskern_df.pop1, p1)
+            push!(diskern_df.pop2, p2)
+            push!(diskern_df.dispersal_prob, disp_prob)
+        end
+    end
+
+    CSV.write(mp_file, pops_df, append=isfile(mp_file))
+    CSV.write(diskern_file, diskern_df, append=isfile(diskern_file))
+end
+
+function batch_fits_multicore(treatment_df, n_cores::Int64; num_generations::Int64 = 20000, log_frequency::Int64 = 100, replicates_per_treatment::Int64=50, metadata_file="fits_metadata.csv", data_file="fits.csv", base_random_seed::Int64 = 5, dispersal_kernel_type = @rect_diskern)
 
     # split treatment df up according to how many
     treatments_per_core::Int64 = ceil(size(treatment_df)[1] / n_cores)
