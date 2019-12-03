@@ -12,7 +12,6 @@ function selection(instance::ibm; b::Float64=3.0, s::Float64=3.0)
             n::Float64 = pop_cts[pop]
             efs::Array{Float64} = instance.mp.populations[pop].efs
             w::Float64 = calc_fitness(i, efs, instance, s)
-
             instance.fitness_map[i] = w
 
             surv::Bool = beverton_holt(w, n, k, b)
@@ -38,6 +37,8 @@ function calc_fitness(i::Int64, efs::Array{Float64}, instance::ibm, s::Float64):
     n_chromo::Int64 = length(chromos)
     genotypes::Array{Float64, 3} = instance.genotypes
 
+    # normalize total fitness by n fitness loci
+
 
     w::Float64 = 1.0
     l::Int64 = 1
@@ -45,6 +46,7 @@ function calc_fitness(i::Int64, efs::Array{Float64}, instance::ibm, s::Float64):
         this_chr_n_loci::Int64 = chromos[c].n_loci
         for c_l = 1:this_chr_n_loci
             corresponding_ef::Int64 = chromos[c].ef_map[c_l]
+            #println("corresponding_ef: ", corresponding_ef)
             if (corresponding_ef != 0)
                 ef_val = efs[corresponding_ef]
 
@@ -57,11 +59,15 @@ function calc_fitness(i::Int64, efs::Array{Float64}, instance::ibm, s::Float64):
             l += 1
         end
     end
+    #println("indiv, fitness: ", i, " ", w)
+
     return w
 end
 
 function calc_fitness_component(x_i::Float64, ef_val::Float64, s::Float64)
     diff_sq::Float64 = (abs(x_i - ef_val))^2
+
+#    println("x_i, ef, diff_sq: ", x_i, " ", ef_val," ", diff_sq)
 
     s_inv::Float64 = 1.0 / (2*(s^2))
 

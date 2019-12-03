@@ -40,6 +40,8 @@ function init_efs(selection_type, n_efs)
     elseif selection_type == @neutral_selection
         efs = []
     end
+
+    print(efs)
     return efs
 end
 

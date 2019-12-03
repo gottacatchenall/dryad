@@ -15,6 +15,8 @@ mutable struct metapop
     populations::Array{population}
     diskern::dispersal_kernel
     n_indivs::Int64
+    fixation_timer::Array{Int64}
+    metapop(populations::Array{population}, diskern::dispersal_kernel, n_indivs::Int64) = new(populations::Array{population}, diskern::dispersal_kernel, n_indivs::Int64)
 end
 
 mutable struct fits
@@ -27,7 +29,8 @@ mutable struct fits
     mutation_rate::Float64
     ct_map::Array{Float64}
     rng::MersenneTwister
-    fits(mp::metapop; n_alleles::Int64=5, mutation_rate::Float64 = 10^-5, migration_rate::Float64=0.01, n_gen=300, log_freq=20, rseed=1) = new(mp, length(mp.populations), n_alleles, n_gen, log_freq, migration_rate, mutation_rate, zeros(Float64, length(mp.populations), n_alleles), MersenneTwister(rseed))
+    fixation_timer::Array{Int64}
+    fits(mp::metapop; n_alleles::Int64=5, mutation_rate::Float64 = 10^-5, migration_rate::Float64=0.01, n_gen=300, log_freq=20, rseed=1) = new(mp, length(mp.populations), n_alleles, n_gen, log_freq, migration_rate, mutation_rate, zeros(Float64, length(mp.populations), n_alleles), MersenneTwister(rseed), zeros(Int64, length(mp.populations)))
 end
 
 

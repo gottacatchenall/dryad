@@ -17,13 +17,10 @@ function batch_fits(treatment_df; num_generations::Int64 = 20000, log_frequency:
         treatment_ct = row.treatment
 
         @printf("Treatment %d: \t (k=%d, ibd_str=%f, m=%f, ipc=%d, npops=%d)\n\t\t", treatment_ct, k, ibd_str, m, ipc, n_pops)
+        mp::metapop = init_random_metapop(num_populations=n_pops, diskern_type=dispersal_kernel_type, ibd_decay=ibd_str)
+        set_mp_total_k(mp, k)
 
         @showprogress for rep = 1:replicates_per_treatment
-            mp::metapop = init_random_metapop(num_populations=n_pops, diskern_type=dispersal_kernel_type, ibd_decay=ibd_str)
-            set_mp_total_k(mp, k)
-
-            log_metapop(treatment_ct, rep, mp)
-
 
             rs = rand(rseedgenerator, DiscreteUniform(1, 10^10))
 
@@ -41,6 +38,7 @@ function batch_fits(treatment_df; num_generations::Int64 = 20000, log_frequency:
                     fits_file = data_file,
                     ibd_str = ibd_str
             )
+
         end
         println("")
     end
@@ -65,15 +63,16 @@ function run_fits(mp::metapop; n_gen::Int64=1000, ipc::Int64=5, mutation_rate::F
             jostd::Float64 = calc_jost_d(state)
             gst::Float64 = calc_gst(state)
 
-            update_frequency_df(frequency_df, treatment, replicate, g, state)
+            #update_frequency_df(frequency_df, treatment, replicate, g, state)
             update_df(df, treatment, replicate, g, jostd, gst)
         end
-        run_gen(fits_instance)
+        run_gen(fits_instance, g)
     end
 
+    log_metapop(fits_instance, treatment, replicate, mp)
 
     # append if not empty
-    CSV.write(freq_file, frequency_df, append=isfile(freq_file))
+    #CSV.write(freq_file, frequency_df, append=isfile(freq_file))
     CSV.write(fits_file, df, append=isfile(fits_file))
 end
 
@@ -205,22 +204,32 @@ function random_mutation(state::Array{Float64, 2}, poly_location)
     state[rand_pop, poly_location] += 1
 end
 
-function run_gen(instance::fits)
+function poly_ct(x::Array{Float64})
+    ct = 0
+    for i in x
+        if i > 0
+            ct += 1
+        end
+    end
+    return ct
+end
+
+function run_gen(instance::fits, g::Int64)
     n_p::Int64 = instance.n_pops
     n_al::Int64 = instance.n_alleles
     migration_rate::Float64 = instance.migration_rate
     mu::Float64 = instance.mutation_rate
+
+
     # consider 1 possible mutation per generation
     # only add it if there is an polymorphism location that is empty everywhere
-
+    n_indiv = sum(instance.ct_map)
     ext_poly_location = extinct_poly_location(instance.ct_map)
     if ext_poly_location > 0
-        if rand(Uniform()) < mu
+        if rand(Uniform()) < (mu * n_indiv)
             random_mutation(instance.ct_map, ext_poly_location)
         end
     end
-    #  mutate an individual in a random population
-
 
     post_drift::Array{Float64} = zeros(n_p, n_al)
     for p = 1:n_p
@@ -231,7 +240,17 @@ function run_gen(instance::fits)
 
     instance.ct_map = post_drift
 
+
+
     for p = 1:n_p
+        # check if this is first fixation time for any pop
+        if poly_ct(post_drift[p, :]) <= 1
+            if (instance.fixation_timer[p] == 0)
+                instance.fixation_timer[p] = g
+            end
+        end
+
+
         post_drift_this_pop = (post_drift[p,:])
         eff_pop_size::Int64 = sum(post_drift_this_pop)
         exp_n_alleles_leaving::Float64 = (eff_pop_size/2.0) * migration_rate
@@ -287,13 +306,13 @@ function update_frequency_df(frequency_df::DataFrame, treatment::Int64, replicat
     end
 end
 
-function log_metapop(treatment::Int64, rep::Int64, mp::metapop; mp_file="metapop.csv", diskern_file="diskern.csv")
+function log_metapop(instance::fits, treatment::Int64, rep::Int64, mp::metapop; mp_file="metapop.csv", diskern_file="diskern.csv")
     # log pops and locations
     # log diskern i,j
 
     # make a dataframe with the columns you want
 
-    pops_df = DataFrame(treatment=[], replicate=[], pop=[], x=[], y=[])
+    pops_df = DataFrame(treatment=[], replicate=[], pop=[], x=[], y=[], time_until_fixation=[])
 
     n_pops = length(mp.populations)
     for pop in 1:n_pops
@@ -306,6 +325,7 @@ function log_metapop(treatment::Int64, rep::Int64, mp::metapop; mp_file="metapop
         push!(pops_df.pop, pop)
         push!(pops_df.x, x)
         push!(pops_df.y, y)
+        push!(pops_df.time_until_fixation, instance.fixation_timer[pop])
     end
 
     diskern_df = DataFrame(treatment=[], replicate=[], pop1=[], pop2=[], dispersal_prob=[])

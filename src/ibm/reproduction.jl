@@ -12,29 +12,30 @@ function reproduction(instance::ibm, b)
     for p = 1:n_pops
         #print("\t pop", p, ": ", length(indivs_by_pop[p]))
         next_gen_ct = 0
-        for i in indivs_by_pop[p]
-            base_num_off = floor(b*instance.fitness_map[i])
-            remainder = b*instance.fitness_map[i] - floor(b*instance.fitness_map[i])
-            u = rand(Uniform(0,1))
+        if (length(indivs_by_pop[p]) > 2)
+            for i in indivs_by_pop[p]
+                base_num_off = floor(b*instance.fitness_map[i])
+                remainder = b*instance.fitness_map[i] - floor(b*instance.fitness_map[i])
+                u = rand(Uniform(0,1))
 
-            exp_num_off::Int64 = base_num_off
-            if (u < remainder)
-                exp_num_off += 1
-            end
+                exp_num_off::Int64 = base_num_off
+                if (u < remainder)
+                    exp_num_off += 1
+                end
 
+                parents_index::Array{Int64} = get_parent(i, indivs_by_pop[p])
 
-            parents_index::Array{Int64} = get_parent(i, indivs_by_pop[p])
+                for i = 1:exp_num_off
+                    next_gen_ct += 1
+                    parent1_genome::Array{Float64, 2} = parent_genotypes[parents_index[1], :,:]
+                    parent2_genome::Array{Float64, 2} = parent_genotypes[parents_index[2], :,:]
 
-            for i = 1:exp_num_off
-                next_gen_ct += 1
-                parent1_genome::Array{Float64, 2} = parent_genotypes[parents_index[1], :,:]
-                parent2_genome::Array{Float64, 2} = parent_genotypes[parents_index[2], :,:]
+                    offspring_genome::Array{Float64, 2} = get_new_genome(parent1_genome, parent2_genome, instance.g)
 
-                offspring_genome::Array{Float64, 2} = get_new_genome(parent1_genome, parent2_genome, instance.g)
-
-                instance.genotypes[i_ct,:,:] = offspring_genome
-                new_pop_map[i_ct] = p
-                i_ct += 1
+                    instance.genotypes[i_ct,:,:] = offspring_genome
+                    new_pop_map[i_ct] = p
+                    i_ct += 1
+                end
             end
         end
         instance.population_map = new_pop_map
@@ -74,7 +75,7 @@ function get_new_haplotype(parent_genome::Array{Float64, 2}, g::genome)
     n_chromos::Int64 = length(chromos)
     n_loci_this_chr::Int64 = 0
     n_loci::Int64 = g.n_loci
-
+    mutation_rate::Float64 = g.mutation_rate
     this_haplotype::Array{Float64,1} = zeros(n_loci)
 
     locus::Int64 = 1
@@ -96,6 +97,8 @@ function get_new_haplotype(parent_genome::Array{Float64, 2}, g::genome)
         parent_haplotype = rand(DiscreteUniform(1,2))
 
         for l = 1:n_loci_this_chr
+
+
             if (n_cross >= cross_ct)
                 if (l == cross_locations[cross_ct])
                     (parent_haplotype == 1) ? parent_haplotype = 2 : parent_haplotype = 1
@@ -103,8 +106,16 @@ function get_new_haplotype(parent_genome::Array{Float64, 2}, g::genome)
                 end
             end
 
-            # put genome in the genome
-            this_haplotype[locus] = parent_genome[locus, parent_haplotype]
+            if (rand(Uniform()) < mutation_rate)
+                mutation::Float64 = rand(Uniform())
+                this_haplotype[locus] = mutation
+                if !(mutation in g.allele_dict[locus])
+                    push!(g.allele_dict[locus], mutation)
+                end
+
+            else
+                this_haplotype[locus] = parent_genome[locus, parent_haplotype]
+            end
             locus += 1
         end
     end

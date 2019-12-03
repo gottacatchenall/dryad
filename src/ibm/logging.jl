@@ -23,7 +23,11 @@ function calc_mean_fitness(instance::ibm)
     end
 
     for p in 1:n_pops
-        mean_fitness[p] = mean_fitness[p] / pop_cts[p]
+        if pop_cts[p] > 0
+            mean_fitness[p] = mean_fitness[p] / pop_cts[p]
+        else
+            mean_fitness[p] = 0.0
+        end
     end
 
     return (mean_fitness)
@@ -34,6 +38,9 @@ function log_pop_data(instance::ibm, allele_freq_map::Array{Array{Float64,2}}, p
     pop_cts::Array{Float64, 1} = get_cts(instance)
 
     w_bars = calc_mean_fitness(instance)
+
+    # print ids 
+
 
     for p = 1:n_pops
         w_bar = w_bars[p]

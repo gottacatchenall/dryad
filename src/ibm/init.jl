@@ -95,7 +95,7 @@ function get_max_indivs_per_pop(mp::metapop)
 end
 
 
-function init_ibm(mp::metapop, g::genome, b; init_condition=false, rs=1)::ibm
+function init_ibm(mp::metapop, g::genome, b; min=0.0, max=1.0, init_condition=false, rs=1)::ibm
     max_n_indivs::Int64 = 5*b*mp.n_indivs
     n_loci::Int64 =  g.n_loci
     n_haplo::Int64 = g.n_haplo
@@ -122,17 +122,55 @@ function init_ibm(mp::metapop, g::genome, b; init_condition=false, rs=1)::ibm
     genotypes::Array{Float64, 3} = zeros(max_n_indivs, n_loci, n_haplo)
     fitness_map::Array{Float64, 1} = zeros(max_n_indivs)
 
-    if (!init_condition)
-        init_uniform_genotypes(g, genotypes, ind_ct)
+    if (init_condition)
+        init_fixed_genotypes(g, genotypes, ind_ct)
         return(ibm(mp,g,dk,genotypes, pop_map, fitness_map, MersenneTwister(rs)))
 
     else
-        init_uniform_genotypes(g, genotypes, ind_ct)
+        init_random_uniform_genotypes(g, genotypes, ind_ct, min=min, max=max)
         return(ibm(mp,g,dk,genotypes, pop_map, fitness_map,MersenneTwister(rs)))
     end
 end
 
-function init_uniform_genotypes(g::genome, genotypes::Array{Float64, 3},  n_indivs::Int64)
+# write function to init genotypes all to 1.0
+function init_fixed_genotypes(g::genome, genotypes::Array{Float64, 3},  n_indivs::Int64)
+    n_loci_per_chromo::Int64 = g.chromosomes[1].n_loci
+    n_loci::Int64 = size(genotypes)[2]
+    # put data in genotypes
+
+    # check fitness map, if fitness, set val = 1.0
+    for l = 1:n_loci
+        c::Int64 = convert(Int64, ceil(l/n_loci_per_chromo))
+        index_in_chromo::Int64 = (l % n_loci_per_chromo)+1
+
+        # store this in a thing, every time there is a mutation push it on to this
+        #==if g.chromosomes[c].ef_map[index_in_chromo] != 0
+            for i = 1:n_indivs
+                genotypes[i, l, 1] = 1.0
+                genotypes[i, l, 2] = 1.0
+            end
+            g.allele_dict[l] = [1.0]
+        else
+            this_locus_init_poly::Int64 = g.chromosomes[c].poly_ct[index_in_chromo]
+            this_locus_alleles = rand(Uniform(), this_locus_init_poly)
+            g.allele_dict[l] = this_locus_alleles
+
+            for i = 1:n_indivs
+                rindex::Array{Int64} = rand(DiscreteUniform(1, this_locus_init_poly), 2)
+                genotypes[i, l, 1] = this_locus_alleles[rindex[1]]
+                genotypes[i, l, 2] = this_locus_alleles[rindex[2]]
+            end
+        end
+        ==#
+        for i = 1:n_indivs
+            genotypes[i, l, 1] = 1.0
+            genotypes[i, l, 2] = 1.0
+        end
+        g.allele_dict[l] = [1.0]
+    end
+end
+
+function init_random_uniform_genotypes(g::genome, genotypes::Array{Float64, 3},  n_indivs::Int64; min=0.0, max=1.0)
     n_loci_per_chromo::Int64 = g.chromosomes[1].n_loci
     n_loci::Int64 = size(genotypes)[2]
     # put data in genotypes
@@ -144,7 +182,7 @@ function init_uniform_genotypes(g::genome, genotypes::Array{Float64, 3},  n_indi
         # store this in a thing, every time there is a mutation push it on to this
         # this
 
-        this_locus_alleles = rand(Uniform(), this_locus_init_poly)
+        this_locus_alleles = rand(Uniform(min, max), this_locus_init_poly)
         g.allele_dict[l] = this_locus_alleles
 
         for i = 1:n_indivs
