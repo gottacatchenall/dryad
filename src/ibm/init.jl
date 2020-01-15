@@ -103,8 +103,8 @@ function init_ibm(mp::metapop, g::genome, b; min=0.0, max=1.0, init_condition=fa
 
     pops::Array{population} = mp.populations
 
-    dk::dispersal_kernel = init_uniform_diskernel(mp)
-
+    #dk::dispersal_kernel = init_uniform_diskernel(mp)
+    df::dispersal_kernel = mp.diskern
 
     # pop map stores indecies to genome and fitness
     pop_map::Array{Int64, 1} = zeros(max_n_indivs)
